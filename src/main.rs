@@ -1,10 +1,13 @@
+use warp::{self, Filter};
 use reqwest;
 use std::collections::HashMap;
 use std::time::Duration;
 use serde_json::Value;
+use tokio;
 
 const BASE_URL: &str = "https://beaconcha.in/api/v1";
 
+#[derive(Debug, Clone)]
 struct CommId {
     epoch: String,
     slot: String,
@@ -12,10 +15,37 @@ struct CommId {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-   
-    
-    Ok(())
+async fn main() {
+    let chain_index_task = tokio::spawn(async move {
+        chain_index().await.expect("Error running chain_index");
+    });
+
+    let validator_pr_route = warp::path!("validator" / String)
+        .and_then(|validator_id: String| async move {
+            let performance = validator_pr(&validator_id).await.unwrap();
+            Ok::<_, warp::Rejection>((performance as f32).to_string())
+        });
+
+    let validator_committee_pr_route = warp::path!("validator_committee" / String)
+        .and_then(|comm_id: String| async move {
+            let parts: Vec<&str> = comm_id.split('_').collect();
+            if parts.len() != 3 {
+                return Err(warp::reject::not_found());
+            }
+            let epoch = parts[0].to_string();
+            let slot = parts[1].to_string();
+            let index = parts[2].to_string();
+            let performance = validator_committee_pr(CommId { epoch, slot, index })
+                .await
+                .unwrap();
+            Ok::<_, warp::Rejection>((performance as f32).to_string())
+        });
+
+    let routes = validator_pr_route.or(validator_committee_pr_route);
+
+    warp::serve(routes).run(([127, 0, 0, 1], 8080)).await;
+
+    chain_index_task.await.unwrap();
 }
 
 async fn chain_index() -> Result<(), Box<dyn std::error::Error>> {
@@ -70,21 +100,22 @@ async fn get_latest_slot() -> Result<u64, Box<dyn std::error::Error>> {
 }
 
 async fn validator_pr(validator_id: &str) -> Result<f64, Box<dyn std::error::Error>> {
-    
-    let url=format!("https://beaconcha.in/api/v1/validator/stats/{}", validator_id);
+    let url = format!("{}/validator/stats/{}", BASE_URL, validator_id);
+
     let response = reqwest::get(&url).await?;
     let text_body = response.text().await?;
     let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
     let missed = json_data["data"]["missed_attestations"].as_u64().unwrap_or_default();
-    let e=32*get_latest_epoch().await?;
-    let s=get_latest_slot().await?;
-    let slots=128+e-s;
-    let performance = 1.0 - (missed as f64)/ (slots as f64);
+    let e = 32 * get_latest_epoch().await?;
+    let s = get_latest_slot().await?;
+    let slots = 128 + e - s;
+    let performance = 1.0 - (missed as f64) / (slots as f64);
     Ok(performance)
 }
 
 async fn missed_attestations(validator_id: &str) -> Result<u64, Box<dyn std::error::Error>> {
-    let url=format!("https://beaconcha.in/api/v1/validator/stats/{}", validator_id);
+    let url = format!("{}/validator/stats/{}", BASE_URL, validator_id);
+
     let response = reqwest::get(&url).await?;
     let text_body = response.text().await?;
     let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
@@ -92,9 +123,12 @@ async fn missed_attestations(validator_id: &str) -> Result<u64, Box<dyn std::err
     Ok(missed)
 }
 
-async fn validator_committee_pr(cid: CommId) -> Result<f64, Box<dyn std::error::Error>>
-{
-    let url = format!("https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/committees?epoch={}&index={}&slot={}",cid.epoch,cid.index,cid.slot);
+async fn validator_committee_pr(cid: CommId) -> Result<f64, Box<dyn std::error::Error>> {
+    let url = format!(
+        "https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/committees?epoch={}&index={}&slot={}",
+        cid.epoch, cid.index, cid.slot
+    );
+
     let response = reqwest::get(&url).await?;
     let text_body = response.text().await?;
     let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
@@ -105,16 +139,15 @@ async fn validator_committee_pr(cid: CommId) -> Result<f64, Box<dyn std::error::
             .collect::<Vec<&str>>(),
         _ => Vec::new(),
     };
-    let mut missed=0;
-    for validator in &validators
-    {
-        let mut m=missed_attestations(validator).await?;
-        missed=missed+m;
+    let mut missed = 0;
+    for validator in &validators {
+        let m = missed_attestations(validator).await?;
+        missed += m;
     }
-    let e=32*get_latest_epoch().await?;
-    let s=get_latest_slot().await?;
-    let vs=validators.len();
-    let slots=(128+e-s)*(vs as u64);
-    let performance = 1.0 - (missed as f64)/ (slots as f64);
+    let e = 32 * get_latest_epoch().await?;
+    let s = get_latest_slot().await?;
+    let vs = validators.len();
+    let slots = (128 + e - s) * (vs as u64);
+    let performance = 1.0 - (missed as f64) / (slots as f64);
     Ok(performance)
 }
