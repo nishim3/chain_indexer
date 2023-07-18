@@ -36,7 +36,7 @@ This Rust application provides two APIs for retrieving performance-related data.
   ```bash
   Performance:100%
   ```
-
+**Note** This API can take upto 10 minutes for execution because of the rate of API calls is limited.
 
 ## How to Use
 
