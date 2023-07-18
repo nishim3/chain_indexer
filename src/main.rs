@@ -23,7 +23,7 @@ async fn main() {
     let validator_pr_route = warp::path!("validator" / String)
         .and_then(|validator_id: String| async move {
             let performance = validator_pr(&validator_id).await.unwrap();
-            Ok::<_, warp::Rejection>(format!("Performance:{} %\n",(100.0*(performance as f32)).to_string()))
+            Ok::<_, warp::Rejection>(format!("Performance:{}%\n",(100.0*(performance as f32)).to_string()))
         });
 
     let validator_committee_pr_route = warp::path!("validator_committee" / String)
@@ -38,7 +38,7 @@ async fn main() {
             let performance = validator_committee_pr(CommId { epoch, slot, index })
                 .await
                 .unwrap();
-            Ok::<_, warp::Rejection>(format!("Performance:{}\n",(100.0*(performance as f32)).to_string()))
+            Ok::<_, warp::Rejection>(format!("Performance:{}%\n",(100.0*(performance as f32)).to_string()))
         });
 
     let routes = validator_pr_route.or(validator_committee_pr_route);

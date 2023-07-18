@@ -8,7 +8,7 @@ This Rust application provides two APIs for retrieving performance-related data.
 ### Validator Performance API
 
 - **Endpoint:** `/validator/{validator_id}`
-- **Description:** Retrieves the performance of a specific validator as a decimal value between 0 and 1.
+- **Description:** Retrieves the performance of a specific validator as a percentage.
 - **HTTP Method:** GET
 - **Path Parameter:**
   - `validator_id` (String): The ID of the validator.
@@ -17,16 +17,14 @@ This Rust application provides two APIs for retrieving performance-related data.
   curl -X GET http://localhost:8080/validator/25
   ```
 - **Example Response:**
-  ```json
-  {
-    "performance": 0.975
-  }
+  ```bash
+  Performance:100%
   ```
 
 ### Validator Committee Performance API
 
 - **Endpoint:** `/validator_committee/{comm_id}`
-- **Description:** Retrieves the performance of a validator committee as a decimal value between 0 and 1.
+- **Description:** Retrieves the performance of a validator committee as a percentage.
 - **HTTP Method:** GET
 - **Path Parameter:**
   - `comm_id` (String): The committee ID in the format "epoch_slot_index".
@@ -35,11 +33,10 @@ This Rust application provides two APIs for retrieving performance-related data.
   curl -X GET http://localhost:8080/validator_committee/2_100_3
   ```
 - **Example Response:**
-  ```json
-  {
-    "performance": 0.852
-  }
+  ```bash
+  Performance:100%
   ```
+
 
 ## How to Use
 
