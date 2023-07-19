@@ -30,13 +30,13 @@ This Rust application provides two APIs for retrieving performance-related data.
   - `comm_id` (String): The committee ID in the format "epoch_slot_index".
 - **Example Request:**
   ```bash
-  curl -X GET http://localhost:8080/validator_committee/2_100_3
+  curl -X GET http://localhost:8080/validator_committee/215567_6898175_3
   ```
 - **Example Response:**
   ```bash
   Performance:100%
   ```
-**Note** This API can take upto 10 minutes or even longer depending on the size of the committee for execution because of the rate of API calls is limited.
+**Note** This API can take upto 10 minutes or even longer depending on the size of the committee for execution because of the rate of API calls to beaconchai.in is limited.
 
 ## How to Use
 
@@ -59,7 +59,6 @@ This Rust application provides two APIs for retrieving performance-related data.
      ```
      Replace `{comm_id}` with the committee ID in the format "epoch_slot_index" you want to retrieve the performance for.
 
-3. The API will respond with the performance value as a decimal between 0 and 1.
+3. The API will respond with the performance value as a percentage.
 
-Make sure to replace `http://localhost:8080` with the appropriate hostname and port where your API is running.
 

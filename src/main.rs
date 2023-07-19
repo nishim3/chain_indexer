@@ -100,18 +100,18 @@ async fn get_latest_slot() -> Result<u64, Box<dyn std::error::Error>> {
 }
 
 async fn validator_pr(validator_id: &str) -> Result<f64, Box<dyn std::error::Error>> {
-    let url = format!("{}/validator/stats/{}", BASE_URL, validator_id);
-
-    let response = reqwest::get(&url).await?;
-    let text_body = response.text().await?;
-    let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
-    let missed = json_data["data"]["missed_attestations"].as_u64().unwrap_or_default();
+    
+    let missed = missed_attestations(validator_id).await?;
     let e = 32 * get_latest_epoch().await?;
     let s = get_latest_slot().await?;
     let slots = 128 + e - s;
-    let performance = 1.0 - (missed as f64) / (slots as f64);
+    let mut performance = 1.0 - (missed as f64) / (slots as f64);
+    if check_status(validator_id).await? {} else { performance=0.0;}
+    
     Ok(performance)
 }
+
+
 
 async fn missed_attestations(validator_id: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let url = format!("{}/validator/stats/{}", BASE_URL, validator_id);
@@ -140,14 +140,28 @@ async fn validator_committee_pr(cid: CommId) -> Result<f64, Box<dyn std::error::
         _ => Vec::new(),
     };
     let mut missed = 0;
+    let mut count=0;
     for validator in &validators {
-        let m = missed_attestations(validator).await?;
-        missed += m;
+        if let Ok(status) = check_status(validator).await {
+            if status {
+                
+            } else {
+                missed+=1;
+            }
+            count+=1;
+        }
     }
-    let e = 32 * get_latest_epoch().await?;
-    let s = get_latest_slot().await?;
-    let vs = validators.len();
-    let slots = (128 + e - s) * (vs as u64);
-    let performance = 1.0 - (missed as f64) / (slots as f64);
+
+    let performance = 1.0 - (missed as f64) / (count as f64);
     Ok(performance)
+}
+
+async fn check_status(validator_id: &str) -> Result<bool, Box<dyn std::error::Error>> 
+{
+    let url=format!("https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/validators?id={}", validator_id);
+    let response = reqwest::get(&url).await?;
+    let text_body = response.text().await?;
+    let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
+    let status=json_data["data"][0]["validator"]["slashed"].as_bool().unwrap_or(false);
+    Ok(!status)
 }
