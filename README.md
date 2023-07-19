@@ -21,26 +21,20 @@ This Rust application provides two APIs for retrieving performance-related data.
   Performance:100%
   ```
 
-### Validator Committee Performance API
+### Network Performance API
 
-- **Endpoint:** `/validator_committee/{comm_id}`
+- **Endpoint:** `/network_performance`
 - **Description:** Retrieves the percentage of active validators in a committee.
 - **HTTP Method:** GET
 - **Path Parameter:**
-  - `committee` (String): The index of the committee in the latest slot.
+  - none
 - **Example Request:**
   ```bash
-  curl -X GET http://localhost:8080/validator_committee/32
+  curl -X GET http://localhost:8080/network_performance
   ```
 - **Example Response:**
   ```bash
-  Percentage of active validators is: 100%
-  
-  epoch: 215973
-  slot: 6911173
-  index: 32
-
-
+Network Performance: 100%
   ```
 
 ## How to Use
@@ -60,9 +54,8 @@ This Rust application provides two APIs for retrieving performance-related data.
 
    - For the Validator Committee Performance API, use the following command:
      ```bash
-     curl -X GET http://localhost:8080/validator_committee/{comm_id}
+     curl -X GET http://localhost:8080/network_performance
      ```
-     Replace `{comm_id}` with the committee ID in the format "epoch_slot_index" you want to retrieve the performance for.
 
 3. The API will respond with the performance value as a percentage.
 
