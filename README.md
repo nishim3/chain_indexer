@@ -36,7 +36,7 @@ This Rust application provides two APIs for retrieving performance-related data.
   ```bash
   Network Performance: 100%
   ```
-
+This API call takes about 2 minutes and sometimes due to bad API results, does not return. Please run the code 2-3 times in case you do not get an output after 2 minutes. Sorry for the inconvenience.
 ## How to Use
 
 1. Start the Rust application by running the following command:
