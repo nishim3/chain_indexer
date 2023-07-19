@@ -31,7 +31,23 @@ async fn main() {
         Ok::<_, warp::Rejection>(format!("Percentage of active validators in this committee are: {}%\n\nepoch: {}\nslot: {}\nindex: {}\n\n", (100.0 * performance), epoch, slot, index))
     });
 
-    let routes = validator_pr_route.or(validator_committee_pr_route);
+    let validator_network_pr_route = warp::path!("network_performance")
+    .and_then(|| async move {
+        match validator_network_pr().await {
+            Ok(performance) => {
+                Ok::<_, warp::Rejection>(format!("Network Performance: {}%\n", (100.0 * performance)))
+            }
+            Err(err) => {
+                eprintln!("Error: {}", err);
+                Err(warp::reject::reject())
+            }
+        }
+    });
+
+let routes = validator_pr_route
+    .or(validator_committee_pr_route)
+    .or(validator_network_pr_route);
+
 
     warp::serve(routes).run(([127, 0, 0, 1], 8080)).await;
 
@@ -115,8 +131,43 @@ async fn missed_attestations(validator_id: &str) -> Result<u64, Box<dyn std::err
 
 async fn validator_committee_pr(index: &str) -> Result<f64, Box<dyn std::error::Error>> {
 
-    let epoch=get_latest_epoch().await?.to_string();
-    let slot=get_latest_slot().await?.to_string();
+    let epoch=get_latest_epoch().await.unwrap().to_string();
+    let slot=get_latest_slot().await.unwrap().to_string();
+    
+    let inactive=inactive_validators(&epoch, &slot, index).await?;
+    let performance = 1.0 - (inactive as f64) / (384 as f64);
+    Ok(performance)
+}
+
+async fn check_status(validator_id: &str) -> Result<bool, Box<dyn std::error::Error>> 
+{
+    let url=format!("https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/validators?id={}", validator_id);
+    let response = reqwest::get(&url).await?;
+    let text_body = response.text().await?;
+    let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
+    let status=json_data["data"][0]["validator"]["slashed"].as_bool().unwrap_or(false);
+    Ok(!status)
+}
+
+
+async fn validator_network_pr() -> Result<f64, Box<dyn std::error::Error>> {
+    let epoch = get_latest_epoch().await.unwrap().to_string();
+    let slot = get_latest_slot().await.unwrap().to_string();
+    let mut total=0.0;
+    for i in 0..63
+    {
+        let inactive=inactive_validators(&epoch, &slot, &(i.to_string())).await?;
+        total = total+inactive;
+        
+    }
+    let inv=(total as f64)/((64*328) as f64);
+    let result=(1 as f64)-inv;
+    Ok(result)
+}
+
+ async fn inactive_validators(epoch: &str,slot: &str,index: &str) -> Result<f64, Box<dyn std::error::Error>> {
+
+    
     let url = format!(
         "https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/committees?epoch={}&index={}&slot={}",
         epoch, index, slot
@@ -132,26 +183,16 @@ async fn validator_committee_pr(index: &str) -> Result<f64, Box<dyn std::error::
             .collect::<Vec<&str>>(),
         _ => Vec::new(),
     };
-    let mut missed = 0;
+    let mut inactive = 0;
+    
     for validator in &validators {
         if let Ok(status) = check_status(validator).await {
             if status {} else 
             {
-                missed+=1;
+                inactive+=1;
             }
         }
     }
-
-    let performance = 1.0 - (missed as f64) / (384 as f64);
-    Ok(performance)
-}
-
-async fn check_status(validator_id: &str) -> Result<bool, Box<dyn std::error::Error>> 
-{
-    let url=format!("https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/validators?id={}", validator_id);
-    let response = reqwest::get(&url).await?;
-    let text_body = response.text().await?;
-    let json_data: serde_json::Value = serde_json::from_str(&text_body)?;
-    let status=json_data["data"][0]["validator"]["slashed"].as_bool().unwrap_or(false);
-    Ok(!status)
-}
+    
+    Ok(inactive as f64)
+ }
