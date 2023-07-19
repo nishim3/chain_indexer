@@ -18,7 +18,7 @@ This Rust application provides two APIs for retrieving performance-related data.
   ```
 - **Example Response:**
   ```bash
-  Performance:100%
+  Performance: 100%
   ```
 
 ### Network Performance API
@@ -34,7 +34,7 @@ This Rust application provides two APIs for retrieving performance-related data.
   ```
 - **Example Response:**
   ```bash
-Network Performance: 100%
+  Network Performance: 100%
   ```
 
 ## How to Use
@@ -52,11 +52,9 @@ Network Performance: 100%
      ```
      Replace `{validator_id}` with the ID of the validator you want to retrieve the performance for.
 
-   - For the Validator Committee Performance API, use the following command:
+   - For the Network Performance API, use the following command:
      ```bash
      curl -X GET http://localhost:8080/network_performance
      ```
 
 3. The API will respond with the performance value as a percentage.
-
-
