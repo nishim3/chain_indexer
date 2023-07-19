@@ -7,12 +7,7 @@ use tokio;
 
 const BASE_URL: &str = "https://beaconcha.in/api/v1";
 
-#[derive(Debug, Clone)]
-struct CommId {
-    epoch: String,
-    slot: String,
-    index: String,
-}
+
 
 #[tokio::main]
 async fn main() {
@@ -26,20 +21,15 @@ async fn main() {
             Ok::<_, warp::Rejection>(format!("Performance:{}%\n",(100.0*(performance as f32)).to_string()))
         });
 
-    let validator_committee_pr_route = warp::path!("validator_committee" / String)
-        .and_then(|comm_id: String| async move {
-            let parts: Vec<&str> = comm_id.split('_').collect();
-            if parts.len() != 3 {
-                return Err(warp::reject::not_found());
-            }
-            let epoch = parts[0].to_string();
-            let slot = parts[1].to_string();
-            let index = parts[2].to_string();
-            let performance = validator_committee_pr(CommId { epoch, slot, index })
-                .await
-                .unwrap();
-            Ok::<_, warp::Rejection>(format!("Performance:{}%\n",(100.0*(performance as f32)).to_string()))
-        });
+        let validator_committee_pr_route = warp::path!("validator_committee" / String)
+    .and_then(|index: String| async move {
+        let epoch = get_latest_epoch().await.unwrap().to_string();
+        let slot = get_latest_slot().await.unwrap().to_string();
+        let performance = validator_committee_pr(&index)
+            .await
+            .unwrap();
+        Ok::<_, warp::Rejection>(format!("Percentage of active validators in this committee are: {}%\n\nepoch: {}\nslot: {}\nindex: {}\n\n", (100.0 * performance), epoch, slot, index))
+    });
 
     let routes = validator_pr_route.or(validator_committee_pr_route);
 
@@ -123,10 +113,13 @@ async fn missed_attestations(validator_id: &str) -> Result<u64, Box<dyn std::err
     Ok(missed)
 }
 
-async fn validator_committee_pr(cid: CommId) -> Result<f64, Box<dyn std::error::Error>> {
+async fn validator_committee_pr(index: &str) -> Result<f64, Box<dyn std::error::Error>> {
+
+    let epoch=get_latest_epoch().await?.to_string();
+    let slot=get_latest_slot().await?.to_string();
     let url = format!(
         "https://docs-demo.quiknode.pro/eth/v1/beacon/states/head/committees?epoch={}&index={}&slot={}",
-        cid.epoch, cid.index, cid.slot
+        epoch, index, slot
     );
 
     let response = reqwest::get(&url).await?;
