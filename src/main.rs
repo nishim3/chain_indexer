@@ -140,19 +140,16 @@ async fn validator_committee_pr(cid: CommId) -> Result<f64, Box<dyn std::error::
         _ => Vec::new(),
     };
     let mut missed = 0;
-    let mut count=0;
     for validator in &validators {
         if let Ok(status) = check_status(validator).await {
-            if status {
-                
-            } else {
+            if status {} else 
+            {
                 missed+=1;
             }
-            count+=1;
         }
     }
 
-    let performance = 1.0 - (missed as f64) / (count as f64);
+    let performance = 1.0 - (missed as f64) / (384 as f64);
     Ok(performance)
 }
 

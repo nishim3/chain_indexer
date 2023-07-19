@@ -24,7 +24,7 @@ This Rust application provides two APIs for retrieving performance-related data.
 ### Validator Committee Performance API
 
 - **Endpoint:** `/validator_committee/{comm_id}`
-- **Description:** Retrieves the performance of a validator committee as a percentage.
+- **Description:** Retrieves the percentage of active validators in a committee.
 - **HTTP Method:** GET
 - **Path Parameter:**
   - `comm_id` (String): The committee ID in the format "epoch_slot_index".
