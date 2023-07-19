@@ -35,10 +35,10 @@ This Rust application provides two APIs for retrieving performance-related data.
 - **Example Response:**
   ```bash
   Percentage of active validators is: 100%
-
-epoch: 215973
-slot: 6911173
-index: 32
+  
+  epoch: 215973
+  slot: 6911173
+  index: 32
 
 
   ```
