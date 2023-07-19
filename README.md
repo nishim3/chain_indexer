@@ -1,4 +1,3 @@
-Certainly! Here's the updated API documentation that includes the `validator_network` API:
 
 ```markdown
 # Rust API Documentation
